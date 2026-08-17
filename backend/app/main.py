@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.database import engine, Base
 from app.models import User, VPNServer, ProxyConfig
-from app.api import auth, vpn, proxy
+from app.api import auth, vpn, proxy, payment
 
 Base.metadata.create_all(bind=engine)
 
@@ -12,7 +12,6 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# Настройка CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,6 +23,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(vpn.router)
 app.include_router(proxy.router)
+app.include_router(payment.router)
 
 @app.get("/")
 async def root():

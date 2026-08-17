@@ -58,6 +58,8 @@ async def home():
         .proxy-card .copy-btn { float: right; padding: 6px 14px; background: var(--accent); color: #000; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
         .proxy-string { font-family: monospace; color: #00ff88; word-break: break-all; }
         .config-block { background: #0d0d14; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: monospace; font-size: 13px; white-space: pre-wrap; word-break: break-all; color: #00ff88; }
+        .balance-box { background: var(--card); border: 1px solid var(--accent); border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px; }
+        .balance-box .amount { font-size: 40px; font-weight: 900; color: var(--accent); }
         footer { text-align: center; padding: 40px 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 14px; }
         @media (max-width: 768px) {
             .hero h1 { font-size: 36px; }
@@ -86,8 +88,8 @@ async def home():
             <h2>Почему NEO</h2>
             <div class="features">
                 <div class="feature">
-                    <h4>⚡ WireGuard</h4>
-                    <p>Самый быстрый VPN-протокол</p>
+                    <h4>⚡ V2Ray</h4>
+                    <p>Маскировка под обычный трафик</p>
                 </div>
                 <div class="feature">
                     <h4>🛡 Без логов</h4>
@@ -159,10 +161,12 @@ async def home():
 
             <div class="dashboard" id="dashboard">
                 <h3 style="text-align:center;margin-bottom:20px">👋 Добро пожаловать, <span id="userName"></span>!</h3>
-                <div style="text-align:center;margin-bottom:30px">
-                    <p style="color:#888">Триал активен до: <span id="trialEnd" style="color:#00d4ff"></span></p>
+                <div class="balance-box">
+                    <div style="color:#888;font-size:14px;margin-bottom:8px">Текущий баланс</div>
+                    <div class="amount" id="balanceAmount">0₽</div>
                 </div>
                 <div style="display:flex;gap:12px;justify-content:center;margin-bottom:30px;flex-wrap:wrap">
+                    <button class="btn small" onclick="topUpBalance()">💳 Пополнить</button>
                     <button class="btn small" onclick="loadServers()">🌍 Серверы</button>
                     <button class="btn small" onclick="loadConfigs()">📡 VPN конфиги</button>
                     <button class="btn small" onclick="createProxy()">🔀 Создать прокси</button>
@@ -194,13 +198,42 @@ async def home():
             }
         }
 
-        function showDashboard(userId, username, trialEnd) {
+        function showDashboard(userId, username) {
             currentUserId = userId;
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('registerForm').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
             document.getElementById('userName').textContent = username;
-            document.getElementById('trialEnd').textContent = new Date(trialEnd).toLocaleDateString('ru-RU');
+            loadBalance();
+        }
+
+        async function loadBalance() {
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/payment/balance/${currentUserId}`);
+                const data = await response.json();
+                document.getElementById('balanceAmount').textContent = data.balance + '₽';
+            } catch (e) {}
+        }
+
+        async function topUpBalance() {
+            const amount = prompt('Введите сумму пополнения (₽):', '100');
+            if (!amount || isNaN(amount)) return;
+            try {
+                const response = await fetch('http://127.0.0.1:8000/payment/topup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: currentUserId, amount: parseFloat(amount) })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert(`✅ Баланс пополнен на ${amount}₽`);
+                    loadBalance();
+                } else {
+                    alert('❌ ' + (data.detail || 'Ошибка'));
+                }
+            } catch (e) {
+                alert('❌ Ошибка соединения');
+            }
         }
 
         async function loginUser() {
@@ -224,7 +257,7 @@ async def home():
                 if (response.ok) {
                     msg.className = 'msg success';
                     msg.textContent = '✅ Вход выполнен!';
-                    showDashboard(data.user_id, data.username, data.trial_end);
+                    showDashboard(data.user_id, data.username);
                 } else {
                     msg.className = 'msg error';
                     msg.textContent = '❌ ' + (data.detail || 'Ошибка входа');
@@ -257,7 +290,7 @@ async def home():
                 if (response.ok) {
                     msg.className = 'msg success';
                     msg.textContent = '✅ Аккаунт создан!';
-                    showDashboard(data.id, username, data.trial_end);
+                    showDashboard(data.id, username);
                 } else {
                     msg.className = 'msg error';
                     msg.textContent = '❌ ' + (data.detail || 'Ошибка регистрации');
@@ -295,18 +328,11 @@ async def home():
                 const servers = await response.json();
                 let html = '<h4 style="margin-bottom:16px">📡 VPN конфиги</h4>';
                 for (const server of servers) {
+                    const config = server.v2ray_config || `vless://${server.public_key}@${server.endpoint}:${server.port}?encryption=none&security=none&type=ws&path=%2Fneo#NEO-VPN`;
                     html += `<div class="proxy-card">
-                        <span class="copy-btn" onclick="copyConfig(${server.id})">Копировать</span>
+                        <span class="copy-btn" onclick="copyConfig('${server.id}')">Копировать</span>
                         <strong>${server.name}</strong> — ${server.country}, ${server.city}<br><br>
-                        <div class="config-block" id="config-${server.id}">[Interface]
-PrivateKey = ВСТАВЬ_СВОЙ_КЛЮЧ
-Address = 10.0.0.2/24
-DNS = 1.1.1.1
-
-[Peer]
-PublicKey = ${server.public_key}
-Endpoint = ${server.endpoint}:${server.port}
-AllowedIPs = 0.0.0.0/0</div>
+                        <div class="config-block" id="config-${server.id}">${config}</div>
                     </div>`;
                 }
                 area.innerHTML = html;

@@ -9,18 +9,17 @@ router = APIRouter(prefix="/vpn", tags=["vpn"])
 
 @router.get("/servers")
 async def get_servers(db: Session = Depends(get_db)):
-    """Список всех активных VPN-серверов"""
     servers = db.query(VPNServer).filter(VPNServer.is_active == True).all()
     return servers
 
 @router.get("/config/{server_id}")
-async def get_config(server_id: int, db: Session = Depends(get_db)):
-    """Получить WireGuard конфиг для сервера"""
+async def get_config(server_id: int, protocol: str = "wireguard", db: Session = Depends(get_db)):
     server = db.query(VPNServer).filter(VPNServer.id == server_id).first()
     if not server:
         raise HTTPException(status_code=404, detail="Сервер не найден")
 
-    config = f"""# {server.name} - {server.country}, {server.city}
+    if protocol == "wireguard":
+        config = f"""# {server.name} - {server.country}, {server.city}
 [Interface]
 PrivateKey = ВСТАВЬ_СВОЙ_ПРИВАТНЫЙ_КЛЮЧ
 Address = 10.0.0.2/24
@@ -32,9 +31,22 @@ Endpoint = {server.endpoint}:{server.port}
 AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
 """
-    return {
-        "server_name": server.name,
-        "country": server.country,
-        "city": server.city,
-        "config": config
-    }
+        return {
+            "server_name": server.name,
+            "country": server.country,
+            "city": server.city,
+            "protocol": "wireguard",
+            "config": config
+        }
+    elif protocol == "vless" or protocol == "vmess":
+        if not server.v2ray_config:
+            raise HTTPException(status_code=404, detail="V2Ray конфиг не настроен для этого сервера")
+        return {
+            "server_name": server.name,
+            "country": server.country,
+            "city": server.city,
+            "protocol": protocol,
+            "config": server.v2ray_config
+        }
+    else:
+        raise HTTPException(status_code=400, detail="Неверный протокол")

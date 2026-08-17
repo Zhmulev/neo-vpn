@@ -16,6 +16,10 @@ class UserResponse(BaseModel):
     email: str
     username: str
     is_active: bool
+    balance: float
+    auto_renew: bool
+    subscription_plan: str
+    subscription_end: Optional[datetime] = None
     trial_end: Optional[datetime] = None
     proxy_enabled: bool
 
@@ -28,3 +32,13 @@ class Token(BaseModel):
     user_id: Optional[int] = None
     username: Optional[str] = None
     trial_end: Optional[datetime] = None
+
+class BalanceTopUp(BaseModel):
+    user_id: int
+    amount: float
+
+class SubscribeRequest(BaseModel):
+    user_id: int
+    plan: str  # basic, pro
+    period: str  # day, week, month, three_months, six_months
+    auto_renew: bool = False

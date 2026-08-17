@@ -244,11 +244,158 @@ class _HomeScreenState extends State<HomeScreen> {
   List<dynamic> _servers = [];
   String _selectedServer = 'Загрузка серверов...';
   bool _serversLoaded = false;
+  double _balance = 0;
+  String _plan = 'trial';
 
   @override
   void initState() {
     super.initState();
     _loadServers();
+    _loadBalance();
+  }
+
+  Future<void> _loadBalance() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://127.0.0.1:8000/payment/balance/${widget.userId}'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _balance = (data['balance'] ?? 0).toDouble();
+        });
+      }
+    } catch (e) {
+      // Ошибка загрузки баланса
+    }
+  }
+
+  Future<void> _topUpBalance() async {
+    final amountController = TextEditingController();
+    final result = await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Color(0xFF141420),
+          title: Text('Пополнить баланс', style: TextStyle(color: Colors.white)),
+          content: TextField(
+            controller: amountController,
+            keyboardType: TextInputType.number,
+            style: TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Сумма (₽)',
+              hintStyle: TextStyle(color: Color(0xFF888888)),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Отмена', style: TextStyle(color: Color(0xFF888888))),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF00D4FF),
+                foregroundColor: Colors.black,
+              ),
+              onPressed: () => Navigator.pop(context, amountController.text),
+              child: Text('Пополнить'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null && result.toString().isNotEmpty) {
+      final amount = double.tryParse(result.toString());
+      if (amount == null || amount <= 0) return;
+
+      try {
+        final response = await http.post(
+          Uri.parse('http://127.0.0.1:8000/payment/topup'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'user_id': widget.userId, 'amount': amount}),
+        );
+        if (response.statusCode == 200) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ Баланс пополнен на $amount₽'),
+              backgroundColor: Color(0xFF00FF88),
+            ),
+          );
+          _loadBalance();
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Ошибка пополнения')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showPlans() async {
+    final result = await showModalBottomSheet(
+      context: context,
+      backgroundColor: Color(0xFF141420),
+      builder: (context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text('Базовый — 99₽/мес', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(context, {'plan': 'basic', 'period': 'month'}),
+            ),
+            ListTile(
+              title: Text('Pro — 199₽/мес', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(context, {'plan': 'pro', 'period': 'month'}),
+            ),
+            ListTile(
+              title: Text('Базовый — 5₽/день', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(context, {'plan': 'basic', 'period': 'day'}),
+            ),
+            ListTile(
+              title: Text('Pro — 9₽/день', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(context, {'plan': 'pro', 'period': 'day'}),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null) {
+      try {
+        final response = await http.post(
+          Uri.parse('http://127.0.0.1:8000/payment/subscribe'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'user_id': widget.userId,
+            'plan': result['plan'],
+            'period': result['period'],
+            'auto_renew': false,
+          }),
+        );
+        final data = jsonDecode(response.body);
+        if (response.statusCode == 200) {
+          setState(() {
+            _plan = result['plan'];
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ Подписка активирована!'),
+              backgroundColor: Color(0xFF00FF88),
+            ),
+          );
+          _loadBalance();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('❌ ${data['detail'] ?? 'Ошибка'}')),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Ошибка соединения')),
+        );
+      }
+    }
   }
 
   Future<void> _loadServers() async {
@@ -345,6 +492,52 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 '👋 ${widget.username}',
                 style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              SizedBox(height: 12),
+              GestureDetector(
+                onTap: _topUpBalance,
+                child: Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Color(0xFF141420),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Color(0xFF00D4FF)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Баланс: ${_balance.toStringAsFixed(0)}₽',
+                        style: TextStyle(color: Color(0xFF00D4FF), fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.add_circle, color: Color(0xFF00D4FF), size: 20),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 12),
+              GestureDetector(
+                onTap: _showPlans,
+                child: Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Color(0xFF141420),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Color(0xFF2A2A3A)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Тариф: $_plan',
+                        style: TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.arrow_drop_down, color: Color(0xFF888888)),
+                    ],
+                  ),
+                ),
               ),
               SizedBox(height: 40),
               GestureDetector(
