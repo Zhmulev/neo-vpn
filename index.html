@@ -187,7 +187,7 @@
         }
 
         async function loadBalance() {
-            const res = await fetch(`${API}/payment/balance/${currentUser.id}`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
+            const res = await fetch(`${API}/payment/balance/${currentUser.id}`);
             const data = await res.json();
             document.getElementById('balance').textContent = (data.balance || 0) + '₽';
         }
@@ -195,7 +195,7 @@
         async function loadConfigs() {
             const area = document.getElementById('contentArea');
             area.innerHTML = 'Загрузка...';
-            const res = await fetch(`${API}/vpn/servers`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
+            const res = await fetch(`${API}/vpn/servers`);
             const servers = await res.json();
             let html = '<h4>📡 VPN конфиги</h4>';
             if (Array.isArray(servers)) {
