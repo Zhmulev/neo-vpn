@@ -144,11 +144,11 @@
                     showDashboard();
                 } else {
                     msg.className = 'msg error';
-                    msg.textContent = data.detail || 'Ошибка';
+                    msg.textContent = typeof data.detail === 'string' ? data.detail : 'Ошибка регистрации';
                 }
             } catch(e) {
                 msg.className = 'msg error';
-                msg.textContent = 'Ошибка соединения';
+                msg.textContent = 'Ошибка соединения: ' + e.message;
             }
         }
 
@@ -169,11 +169,11 @@
                     showDashboard();
                 } else {
                     msg.className = 'msg error';
-                    msg.textContent = data.detail || 'Ошибка';
+                    msg.textContent = typeof data.detail === 'string' ? data.detail : 'Неверный email или пароль';
                 }
             } catch(e) {
                 msg.className = 'msg error';
-                msg.textContent = 'Ошибка соединения';
+                msg.textContent = 'Ошибка соединения: ' + e.message;
             }
         }
 
