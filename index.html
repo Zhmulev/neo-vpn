@@ -56,7 +56,7 @@
     <div class="auth-box hidden" id="authBox">
         <h3 style="text-align:center;margin-bottom:16px">Регистрация / Вход</h3>
         <input type="email" id="email" placeholder="Email">
-        <input type="text" id="username" placeholder="Username (только для регистрации)">
+        <input type="text" id="username" placeholder="Username">
         <input type="password" id="password" placeholder="Пароль">
         <button class="btn" style="width:100%" onclick="register()">Создать аккаунт</button>
         <div style="text-align:center;margin-top:8px">
@@ -139,9 +139,9 @@
                     body: JSON.stringify({email, username, password})
                 });
                 const data = await res.json();
-                if (res.ok) {
-                    currentUser = data;
-                    showDashboard(data);
+                if (data.id) {
+                    currentUser = {id: data.id, username: data.username};
+                    showDashboard();
                 } else {
                     msg.className = 'msg error';
                     msg.textContent = data.detail || 'Ошибка';
@@ -164,9 +164,9 @@
                     body: JSON.stringify({email, password})
                 });
                 const data = await res.json();
-                if (res.ok) {
+                if (data.user_id) {
                     currentUser = {id: data.user_id, username: data.username};
-                    showDashboard(currentUser);
+                    showDashboard();
                 } else {
                     msg.className = 'msg error';
                     msg.textContent = data.detail || 'Ошибка';
@@ -177,17 +177,17 @@
             }
         }
 
-        function showDashboard(user) {
+        function showDashboard() {
             document.getElementById('authBox').classList.add('hidden');
             document.getElementById('hero').classList.add('hidden');
             document.getElementById('pricing').classList.add('hidden');
             document.getElementById('dashboard').classList.remove('hidden');
-            document.getElementById('userName').textContent = user.username || 'Пользователь';
-            loadBalance(user.id);
+            document.getElementById('userName').textContent = currentUser.username || 'Пользователь';
+            loadBalance();
         }
 
-        async function loadBalance(userId) {
-            const res = await fetch(`${API}/payment/balance/${userId}`);
+        async function loadBalance() {
+            const res = await fetch(`${API}/payment/balance/${currentUser.id}`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
             const data = await res.json();
             document.getElementById('balance').textContent = (data.balance || 0) + '₽';
         }
@@ -195,28 +195,28 @@
         async function loadConfigs() {
             const area = document.getElementById('contentArea');
             area.innerHTML = 'Загрузка...';
-            const res = await fetch(`${API}/vpn/servers`);
+            const res = await fetch(`${API}/vpn/servers`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
             const servers = await res.json();
             let html = '<h4>📡 VPN конфиги</h4>';
-            servers.forEach(s => {
-                const config = s.v2ray_config || '';
-                html += `<div class="proxy-card">
-                    <span class="copy-btn" onclick="copy('${s.id}')">Копировать</span>
-                    <strong>${s.name}</strong> — ${s.country}<br><br>
-                    <div class="config-block" id="config-${s.id}">${config}</div>
-                </div>`;
-            });
+            if (Array.isArray(servers)) {
+                servers.forEach(s => {
+                    const config = s.v2ray_config || '';
+                    html += `<div class="proxy-card">
+                        <span class="copy-btn" onclick="copy('${s.id}')">Копировать</span>
+                        <strong>${s.name}</strong> — ${s.country}<br><br>
+                        <div class="config-block" id="config-${s.id}">${config}</div>
+                    </div>`;
+                });
+            }
             area.innerHTML = html;
         }
 
         async function createProxy() {
             const area = document.getElementById('contentArea');
             area.innerHTML = 'Создание прокси...';
-            const res = await fetch(`${API}/proxy/create?user_id=${currentUser.id}&server_id=1&proxy_type=socks5`, {
-                method: 'POST'
-            });
+            const res = await fetch(`${API}/proxy/create?user_id=${currentUser.id}&server_id=1&proxy_type=socks5`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
             const data = await res.json();
-            if (res.ok) {
+            if (data.proxy_string) {
                 area.innerHTML = `<div class="proxy-card">
                     <strong>✅ Прокси создан</strong><br>
                     <span style="color:#00ff88">${data.proxy_string}</span>
