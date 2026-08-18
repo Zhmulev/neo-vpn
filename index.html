@@ -11,11 +11,18 @@
         .container { max-width: 1000px; margin: 0 auto; padding: 0 20px; }
         nav { display: flex; justify-content: space-between; padding: 24px 20px; border-bottom: 1px solid var(--border); }
         .logo { font-size: 24px; font-weight: 900; color: var(--accent); }
-        .hero { text-align: center; padding: 80px 20px; }
+        .hero { text-align: center; padding: 60px 20px; }
         .hero h1 { font-size: 48px; margin-bottom: 16px; }
         .hero h1 span { color: var(--accent); }
-        .hero p { color: var(--muted); font-size: 20px; margin-bottom: 32px; }
-        .btn { display: inline-block; padding: 16px 40px; background: var(--accent); color: #000; border-radius: 10px; font-weight: bold; text-decoration: none; cursor: pointer; border: none; font-size: 16px; }
+        .hero p { color: var(--muted); font-size: 20px; margin-bottom: 24px; }
+        .btn { display: inline-block; padding: 14px 32px; background: var(--accent); color: #000; border-radius: 10px; font-weight: bold; text-decoration: none; cursor: pointer; border: none; font-size: 16px; }
+        .btn.small { padding: 10px 20px; font-size: 14px; }
+        .auth-box { max-width: 400px; margin: 0 auto; padding: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; }
+        .auth-box input { width: 100%; padding: 14px; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px; }
+        .auth-box input:focus { outline: none; border-color: var(--accent); }
+        .msg { display: none; padding: 16px; border-radius: 8px; margin-top: 16px; }
+        .msg.success { display: block; background: #0a2a1a; color: #00ff88; border: 1px solid #00ff88; }
+        .msg.error { display: block; background: #2a0a0a; color: #ff4444; border: 1px solid #ff4444; }
         .pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; padding: 60px 20px; }
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; text-align: center; }
         .card h3 { margin-bottom: 8px; }
@@ -24,9 +31,14 @@
         .card li { padding: 8px 0; color: var(--muted); }
         .card li::before { content: "✓ "; color: var(--accent); font-weight: bold; }
         .card.featured { border-color: var(--accent); }
-        .email-input { width: 100%; padding: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px; margin-bottom: 12px; text-align: center; }
-        .email-input:focus { outline: none; border-color: var(--accent); }
+        .dashboard { display: none; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .balance-box { background: var(--card); border: 1px solid var(--accent); border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px; }
+        .balance-box .amount { font-size: 40px; font-weight: 900; color: var(--accent); }
+        .proxy-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 12px; text-align: left; }
+        .config-block { background: #0d0d14; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: monospace; font-size: 13px; word-break: break-all; color: #00ff88; }
+        .copy-btn { float: right; padding: 6px 14px; background: var(--accent); color: #000; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
         footer { text-align: center; padding: 40px; color: var(--muted); border-top: 1px solid var(--border); }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -35,9 +47,37 @@
         <div style="color:#888">Свобода в сети</div>
     </nav>
 
-    <div class="hero">
+    <div class="hero" id="hero">
         <h1>Безопасный VPN <span>и прокси</span><br>в одном сервисе</h1>
         <p>Обход блокировок, защита данных и прокси для работы.<br>Без логов. Триал 3 дня бесплатно.</p>
+        <button class="btn" onclick="showAuth()">Начать бесплатно</button>
+    </div>
+
+    <div class="auth-box hidden" id="authBox">
+        <h3 style="text-align:center;margin-bottom:16px">Регистрация / Вход</h3>
+        <input type="email" id="email" placeholder="Email">
+        <input type="text" id="username" placeholder="Username (только для регистрации)">
+        <input type="password" id="password" placeholder="Пароль">
+        <button class="btn" style="width:100%" onclick="register()">Создать аккаунт</button>
+        <div style="text-align:center;margin-top:8px">
+            <button class="btn small" style="background:transparent;color:#00d4ff" onclick="login()">Уже есть аккаунт? Войти</button>
+        </div>
+        <div class="msg" id="authMsg"></div>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <h3 style="text-align:center;margin-bottom:16px">👋 <span id="userName"></span></h3>
+        <div class="balance-box">
+            <div style="color:#888;font-size:14px">Баланс</div>
+            <div class="amount" id="balance">0₽</div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:20px">
+            <button class="btn small" onclick="loadConfigs()">📡 Конфиги</button>
+            <button class="btn small" onclick="createProxy()">🔀 Прокси</button>
+            <button class="btn small" onclick="buy('basic')">💳 99₽</button>
+            <button class="btn small" onclick="buy('pro')">💎 199₽</button>
+        </div>
+        <div id="contentArea"></div>
     </div>
 
     <div class="pricing" id="pricing">
@@ -50,8 +90,7 @@
                 <li>Безлимитный трафик</li>
                 <li>Протокол V2Ray</li>
             </ul>
-            <input type="email" class="email-input" id="email-basic" placeholder="Твой email">
-            <button class="btn" onclick="pay('basic')">Оплатить 99₽</button>
+            <button class="btn" onclick="showAuth()">Выбрать</button>
         </div>
         <div class="card featured">
             <h3>Pro</h3>
@@ -62,8 +101,7 @@
                 <li>Доступ к API</li>
                 <li>Приоритетная поддержка</li>
             </ul>
-            <input type="email" class="email-input" id="email-pro" placeholder="Твой email">
-            <button class="btn" onclick="pay('pro')">Оплатить 199₽</button>
+            <button class="btn" onclick="showAuth()">Выбрать</button>
         </div>
     </div>
 
@@ -73,54 +111,137 @@
     </footer>
 
     <script>
-        async function pay(plan) {
-            const email = plan === 'basic'
-                ? document.getElementById('email-basic').value
-                : document.getElementById('email-pro').value;
+        const API = 'http://91.132.57.27:8000';
+        let currentUser = null;
 
-            if (!email) {
-                alert('Введи email');
+        function showAuth() {
+            document.getElementById('authBox').classList.remove('hidden');
+            document.getElementById('hero').classList.add('hidden');
+            document.getElementById('pricing').classList.add('hidden');
+        }
+
+        async function register() {
+            const email = document.getElementById('email').value;
+            const username = document.getElementById('username').value || email.split('@')[0];
+            const password = document.getElementById('password').value;
+            const msg = document.getElementById('authMsg');
+
+            if (!email || !password) {
+                msg.className = 'msg error';
+                msg.textContent = 'Заполни email и пароль';
                 return;
             }
 
-            const amount = plan === 'basic' ? 99 : 199;
+            try {
+                const res = await fetch(`${API}/auth/register`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email, username, password})
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    currentUser = data;
+                    showDashboard(data);
+                } else {
+                    msg.className = 'msg error';
+                    msg.textContent = data.detail || 'Ошибка';
+                }
+            } catch(e) {
+                msg.className = 'msg error';
+                msg.textContent = 'Ошибка соединения';
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const msg = document.getElementById('authMsg');
 
             try {
-                // Регистрируем пользователя
-                const regResponse = await fetch('http://91.132.57.27:8000/auth/register', {
+                const res = await fetch(`${API}/auth/login`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: email,
-                        username: email.split('@')[0],
-                        password: Math.random().toString(36).slice(-8)
-                    })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email, password})
                 });
-
-                const regData = await regResponse.json();
-                const userId = regData.id;
-
-                // Создаём платёж
-                const payResponse = await fetch('http://91.132.57.27:8000/pay/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        amount: amount,
-                        description: `NEO VPN ${plan.toUpperCase()} - ${amount}₽`
-                    })
-                });
-
-                const payData = await payResponse.json();
-
-                if (payData.confirmation_url) {
-                    window.location.href = payData.confirmation_url;
+                const data = await res.json();
+                if (res.ok) {
+                    currentUser = {id: data.user_id, username: data.username};
+                    showDashboard(currentUser);
                 } else {
-                    alert('Ошибка создания платежа');
+                    msg.className = 'msg error';
+                    msg.textContent = data.detail || 'Ошибка';
                 }
-            } catch (e) {
-                alert('Ошибка соединения');
+            } catch(e) {
+                msg.className = 'msg error';
+                msg.textContent = 'Ошибка соединения';
             }
+        }
+
+        function showDashboard(user) {
+            document.getElementById('authBox').classList.add('hidden');
+            document.getElementById('hero').classList.add('hidden');
+            document.getElementById('pricing').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('userName').textContent = user.username || 'Пользователь';
+            loadBalance(user.id);
+        }
+
+        async function loadBalance(userId) {
+            const res = await fetch(`${API}/payment/balance/${userId}`);
+            const data = await res.json();
+            document.getElementById('balance').textContent = (data.balance || 0) + '₽';
+        }
+
+        async function loadConfigs() {
+            const area = document.getElementById('contentArea');
+            area.innerHTML = 'Загрузка...';
+            const res = await fetch(`${API}/vpn/servers`);
+            const servers = await res.json();
+            let html = '<h4>📡 VPN конфиги</h4>';
+            servers.forEach(s => {
+                const config = s.v2ray_config || '';
+                html += `<div class="proxy-card">
+                    <span class="copy-btn" onclick="copy('${s.id}')">Копировать</span>
+                    <strong>${s.name}</strong> — ${s.country}<br><br>
+                    <div class="config-block" id="config-${s.id}">${config}</div>
+                </div>`;
+            });
+            area.innerHTML = html;
+        }
+
+        async function createProxy() {
+            const area = document.getElementById('contentArea');
+            area.innerHTML = 'Создание прокси...';
+            const res = await fetch(`${API}/proxy/create?user_id=${currentUser.id}&server_id=1&proxy_type=socks5`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            if (res.ok) {
+                area.innerHTML = `<div class="proxy-card">
+                    <strong>✅ Прокси создан</strong><br>
+                    <span style="color:#00ff88">${data.proxy_string}</span>
+                </div>`;
+            } else {
+                area.innerHTML = `<p style="color:#ff4444">${data.detail || 'Ошибка'}</p>`;
+            }
+        }
+
+        async function buy(plan) {
+            const amount = plan === 'basic' ? 99 : 199;
+            const res = await fetch(`${API}/pay/create`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: currentUser.id, amount, description: `NEO VPN ${plan.toUpperCase()}`})
+            });
+            const data = await res.json();
+            if (data.confirmation_url) {
+                window.location.href = data.confirmation_url;
+            }
+        }
+
+        function copy(id) {
+            const text = document.getElementById('config-' + id).textContent;
+            navigator.clipboard.writeText(text).then(() => alert('Скопировано!'));
         }
     </script>
 </body>
