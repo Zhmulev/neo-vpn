@@ -15,7 +15,7 @@
         .hero h1 { font-size: 48px; margin-bottom: 16px; }
         .hero h1 span { color: var(--accent); }
         .hero p { color: var(--muted); font-size: 20px; margin-bottom: 32px; }
-        .btn { display: inline-block; padding: 16px 40px; background: var(--accent); color: #000; border-radius: 10px; font-weight: bold; text-decoration: none; }
+        .btn { display: inline-block; padding: 16px 40px; background: var(--accent); color: #000; border-radius: 10px; font-weight: bold; text-decoration: none; cursor: pointer; border: none; font-size: 16px; }
         .pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; padding: 60px 20px; }
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; text-align: center; }
         .card h3 { margin-bottom: 8px; }
@@ -24,6 +24,8 @@
         .card li { padding: 8px 0; color: var(--muted); }
         .card li::before { content: "✓ "; color: var(--accent); font-weight: bold; }
         .card.featured { border-color: var(--accent); }
+        .email-input { width: 100%; padding: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px; margin-bottom: 12px; text-align: center; }
+        .email-input:focus { outline: none; border-color: var(--accent); }
         footer { text-align: center; padding: 40px; color: var(--muted); border-top: 1px solid var(--border); }
     </style>
 </head>
@@ -36,7 +38,6 @@
     <div class="hero">
         <h1>Безопасный VPN <span>и прокси</span><br>в одном сервисе</h1>
         <p>Обход блокировок, защита данных и прокси для работы.<br>Без логов. Триал 3 дня бесплатно.</p>
-        <a href="#pricing" class="btn">Выбрать тариф</a>
     </div>
 
     <div class="pricing" id="pricing">
@@ -49,7 +50,8 @@
                 <li>Безлимитный трафик</li>
                 <li>Протокол V2Ray</li>
             </ul>
-            <a href="mailto:zhmulevav@gmail.com" class="btn" style="background:transparent;color:#00d4ff;border:1px solid #00d4ff">Заказать</a>
+            <input type="email" class="email-input" id="email-basic" placeholder="Твой email">
+            <button class="btn" onclick="pay('basic')">Оплатить 99₽</button>
         </div>
         <div class="card featured">
             <h3>Pro</h3>
@@ -60,7 +62,8 @@
                 <li>Доступ к API</li>
                 <li>Приоритетная поддержка</li>
             </ul>
-            <a href="mailto:zhmulevav@gmail.com" class="btn">Заказать</a>
+            <input type="email" class="email-input" id="email-pro" placeholder="Твой email">
+            <button class="btn" onclick="pay('pro')">Оплатить 199₽</button>
         </div>
     </div>
 
@@ -68,5 +71,57 @@
         NEO VPN © 2026 — Свобода в сети<br>
         Telegram: <a href="https://t.me/neo_vpn_ru" style="color:#00d4ff">@neo_vpn_ru</a>
     </footer>
+
+    <script>
+        async function pay(plan) {
+            const email = plan === 'basic'
+                ? document.getElementById('email-basic').value
+                : document.getElementById('email-pro').value;
+
+            if (!email) {
+                alert('Введи email');
+                return;
+            }
+
+            const amount = plan === 'basic' ? 99 : 199;
+
+            try {
+                // Регистрируем пользователя
+                const regResponse = await fetch('http://91.132.57.27:8000/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: email,
+                        username: email.split('@')[0],
+                        password: Math.random().toString(36).slice(-8)
+                    })
+                });
+
+                const regData = await regResponse.json();
+                const userId = regData.id;
+
+                // Создаём платёж
+                const payResponse = await fetch('http://91.132.57.27:8000/pay/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        amount: amount,
+                        description: `NEO VPN ${plan.toUpperCase()} - ${amount}₽`
+                    })
+                });
+
+                const payData = await payResponse.json();
+
+                if (payData.confirmation_url) {
+                    window.location.href = payData.confirmation_url;
+                } else {
+                    alert('Ошибка создания платежа');
+                }
+            } catch (e) {
+                alert('Ошибка соединения');
+            }
+        }
+    </script>
 </body>
 </html>
