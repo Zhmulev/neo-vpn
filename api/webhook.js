@@ -1,6 +1,9 @@
 export default async function handler(req, res) {
   const { path } = req.query;
-  const url = `http://91.132.57.27:8000${path || '/'}`;
+  const baseUrl = 'http://91.132.57.27:8000';
+  
+  // Если path не указан — это webhook от ЮKassa
+  const url = path ? `${baseUrl}${path}` : `${baseUrl}/pay/webhook`;
 
   try {
     const response = await fetch(url, {
