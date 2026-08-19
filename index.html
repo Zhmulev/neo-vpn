@@ -39,6 +39,7 @@
         .copy-btn { float: right; padding: 6px 14px; background: var(--accent); color: #000; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
         footer { text-align: center; padding: 40px; color: var(--muted); border-top: 1px solid var(--border); }
         .hidden { display: none; }
+        .topup-input { width: 120px; padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-align: center; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -72,10 +73,10 @@
             <div class="amount" id="balance">0₽</div>
         </div>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:20px">
+            <input type="number" class="topup-input" id="topupAmount" placeholder="Сумма" value="100">
+            <button class="btn small" onclick="topUp()">💳 Пополнить</button>
             <button class="btn small" onclick="loadConfigs()">📡 Конфиги</button>
             <button class="btn small" onclick="createProxy()">🔀 Прокси</button>
-            <button class="btn small" onclick="buy('basic')">💳 99₽</button>
-            <button class="btn small" onclick="buy('pro')">💎 199₽</button>
         </div>
         <div id="contentArea"></div>
     </div>
@@ -141,19 +142,14 @@
                 const data = await res.json();
                 if (data.id) {
                     currentUser = {id: data.id, username: data.username};
-                    document.getElementById('authBox').classList.add('hidden');
-                    document.getElementById('hero').classList.add('hidden');
-                    document.getElementById('pricing').classList.add('hidden');
-                    document.getElementById('dashboard').style.display = 'block';
-                    document.getElementById('userName').textContent = data.username;
-                    loadBalance();
+                    showDashboard();
                 } else {
                     msg.className = 'msg error';
                     msg.textContent = typeof data.detail === 'string' ? data.detail : 'Ошибка регистрации';
                 }
             } catch(e) {
                 msg.className = 'msg error';
-                msg.textContent = 'Ошибка соединения: ' + e.message;
+                msg.textContent = 'Ошибка соединения';
             }
         }
 
@@ -171,26 +167,46 @@
                 const data = await res.json();
                 if (data.user_id) {
                     currentUser = {id: data.user_id, username: data.username};
-                    document.getElementById('authBox').classList.add('hidden');
-                    document.getElementById('hero').classList.add('hidden');
-                    document.getElementById('pricing').classList.add('hidden');
-                    document.getElementById('dashboard').style.display = 'block';
-                    document.getElementById('userName').textContent = data.username;
-                    loadBalance();
+                    showDashboard();
                 } else {
                     msg.className = 'msg error';
                     msg.textContent = typeof data.detail === 'string' ? data.detail : 'Неверный email или пароль';
                 }
             } catch(e) {
                 msg.className = 'msg error';
-                msg.textContent = 'Ошибка соединения: ' + e.message;
+                msg.textContent = 'Ошибка соединения';
             }
+        }
+
+        function showDashboard() {
+            document.getElementById('authBox').classList.add('hidden');
+            document.getElementById('hero').classList.add('hidden');
+            document.getElementById('pricing').classList.add('hidden');
+            document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('userName').textContent = currentUser.username || 'Пользователь';
+            loadBalance();
         }
 
         async function loadBalance() {
             const res = await fetch(`${API}/payment/balance/${currentUser.id}`);
             const data = await res.json();
             document.getElementById('balance').textContent = (data.balance || 0) + '₽';
+        }
+
+        async function topUp() {
+            const amount = document.getElementById('topupAmount').value;
+            if (!amount || amount <= 0) return;
+            const res = await fetch(`${API}/pay/create`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: currentUser.id, amount: parseFloat(amount), description: 'Пополнение баланса NEO VPN'})
+            });
+            const data = await res.json();
+            if (data.confirmation_url) {
+                window.location.href = data.confirmation_url;
+            } else {
+                alert('Ошибка: ' + (data.detail || ''));
+            }
         }
 
         async function loadConfigs() {
@@ -215,7 +231,7 @@
         async function createProxy() {
             const area = document.getElementById('contentArea');
             area.innerHTML = 'Создание прокси...';
-            const res = await fetch(`${API}/proxy/create?user_id=${currentUser.id}&server_id=1&proxy_type=socks5`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
+            const res = await fetch(`${API}/proxy/create?user_id=${currentUser.id}&server_id=1&proxy_type=socks5`, {method: 'POST'});
             const data = await res.json();
             if (data.proxy_string) {
                 area.innerHTML = `<div class="proxy-card">
@@ -223,20 +239,7 @@
                     <span style="color:#00ff88">${data.proxy_string}</span>
                 </div>`;
             } else {
-                area.innerHTML = `<p style="color:#ff4444">${data.detail || 'Ошибка'}</p>`;
-            }
-        }
-
-        async function buy(plan) {
-            const amount = plan === 'basic' ? 99 : 199;
-            const res = await fetch(`${API}/pay/create`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({user_id: currentUser.id, amount, description: `NEO VPN ${plan.toUpperCase()}`})
-            });
-            const data = await res.json();
-            if (data.confirmation_url) {
-                window.location.href = data.confirmation_url;
+                area.innerHTML = `<p style="color:#ff4444">${typeof data.detail === 'string' ? data.detail : 'Ошибка'}</p>`;
             }
         }
 
