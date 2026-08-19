@@ -139,6 +139,7 @@
                     body: JSON.stringify({email, username, password})
                 });
                 const data = await res.json();
+                alert('Ответ API: ' + JSON.stringify(data));
                 if (data.id) {
                     currentUser = {id: data.id, username: data.username};
                     showDashboard();
@@ -164,6 +165,7 @@
                     body: JSON.stringify({email, password})
                 });
                 const data = await res.json();
+                alert('Ответ API: ' + JSON.stringify(data));
                 if (data.user_id) {
                     currentUser = {id: data.user_id, username: data.username};
                     showDashboard();
