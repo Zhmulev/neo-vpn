@@ -79,7 +79,7 @@
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:20px">
             <input type="number" class="topup-input" id="topupAmount" placeholder="Сумма" value="150">
             <button class="btn small" onclick="topUp()">💳 Пополнить</button>
-            <button class="btn small" onclick="loadConfigs()">📡 Конфиги</button>
+            <button class="btn small" onclick="addDevice()">📱 Моё устройство</button>
             <button class="btn small" onclick="createProxy()">🔀 Прокси</button>
         </div>
         <div id="contentArea"></div>
@@ -243,28 +243,25 @@
             }
         }
 
-        async function loadConfigs() {
+        async function addDevice() {
             await loadBalance();
             const area = document.getElementById('contentArea');
             if (userBalance <= 0) {
                 area.innerHTML = '<p style="color:#ff4444">Пополните баланс, чтобы получить конфиг</p>';
                 return;
             }
-            area.innerHTML = 'Загрузка...';
-            const res = await fetch(`${API}/vpn/servers`);
-            const servers = await res.json();
-            let html = '<h4>📡 VPN конфиги</h4>';
-            if (Array.isArray(servers)) {
-                servers.forEach(s => {
-                    const config = s.v2ray_config || '';
-                    html += `<div class="proxy-card">
-                        <span class="copy-btn" onclick="copy('${s.id}')">Копировать</span>
-                        <strong>${s.name}</strong> — ${s.country}<br><br>
-                        <div class="config-block" id="config-${s.id}">${config}</div>
-                    </div>`;
-                });
+            area.innerHTML = 'Создание устройства...';
+            const res = await fetch(`${API}/devices/create?user_id=${currentUser.id}&name=MyDevice`, {method: 'POST'});
+            const data = await res.json();
+            if (data.config) {
+                area.innerHTML = `<div class="proxy-card">
+                    <span class="copy-btn" onclick="copyConfig('${data.id}')">Копировать</span>
+                    <strong>✅ Устройство создано</strong><br><br>
+                    <div class="config-block" id="config-${data.id}">${data.config}</div>
+                </div>`;
+            } else {
+                area.innerHTML = `<p style="color:#ff4444">${typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)}</p>`;
             }
-            area.innerHTML = html;
         }
 
         async function createProxy() {
@@ -287,7 +284,7 @@
             }
         }
 
-        function copy(id) {
+        function copyConfig(id) {
             const text = document.getElementById('config-' + id).textContent;
             navigator.clipboard.writeText(text).then(() => alert('Скопировано!'));
         }
