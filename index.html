@@ -40,6 +40,9 @@
         footer { text-align: center; padding: 40px; color: var(--muted); border-top: 1px solid var(--border); }
         .hidden { display: none; }
         .topup-input { width: 120px; padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-align: center; font-size: 16px; }
+        .tabs { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; }
+        .tab { padding: 8px 20px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--text); }
+        .tab.active { background: var(--accent); color: #000; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -51,18 +54,19 @@
     <div class="hero" id="hero">
         <h1>Безопасный VPN <span>и прокси</span><br>в одном сервисе</h1>
         <p>Обход блокировок, защита данных и прокси для работы.<br>Без логов. Триал 3 дня бесплатно.</p>
-        <button class="btn" onclick="showAuth()">Начать бесплатно</button>
+        <button class="btn" onclick="showAuth('register')">Начать бесплатно</button>
     </div>
 
     <div class="auth-box hidden" id="authBox">
-        <h3 style="text-align:center;margin-bottom:16px">Регистрация / Вход</h3>
+        <div class="tabs">
+            <div class="tab active" id="tabRegister" onclick="switchTab('register')">Регистрация</div>
+            <div class="tab" id="tabLogin" onclick="switchTab('login')">Вход</div>
+        </div>
+        <h3 style="text-align:center;margin-bottom:16px" id="authTitle">Регистрация</h3>
         <input type="email" id="email" placeholder="Email">
         <input type="text" id="username" placeholder="Username">
         <input type="password" id="password" placeholder="Пароль">
-        <button class="btn" style="width:100%" onclick="register()">Создать аккаунт</button>
-        <div style="text-align:center;margin-top:8px">
-            <button class="btn small" style="background:transparent;color:#00d4ff" onclick="login()">Уже есть аккаунт? Войти</button>
-        </div>
+        <button class="btn" style="width:100%" onclick="submitAuth()">Создать аккаунт</button>
         <div class="msg" id="authMsg"></div>
     </div>
 
@@ -91,7 +95,7 @@
                 <li>Безлимитный трафик</li>
                 <li>Протокол V2Ray</li>
             </ul>
-            <button class="btn" onclick="showAuth()">Выбрать</button>
+            <button class="btn" onclick="showAuth('register')">Выбрать</button>
         </div>
         <div class="card featured">
             <h3>Pro</h3>
@@ -102,7 +106,7 @@
                 <li>Доступ к API</li>
                 <li>Приоритетная поддержка</li>
             </ul>
-            <button class="btn" onclick="showAuth()">Выбрать</button>
+            <button class="btn" onclick="showAuth('register')">Выбрать</button>
         </div>
     </div>
 
@@ -115,11 +119,39 @@
         const API = 'https://neo-vpn.vercel.app/api/webhook?path=';
         let currentUser = null;
         let userBalance = 0;
+        let authMode = 'register';
 
-        function showAuth() {
+        function showAuth(mode) {
+            authMode = mode || 'register';
+            switchTab(authMode);
             document.getElementById('authBox').classList.remove('hidden');
             document.getElementById('hero').classList.add('hidden');
             document.getElementById('pricing').classList.add('hidden');
+        }
+
+        function switchTab(mode) {
+            authMode = mode;
+            if (mode === 'login') {
+                document.getElementById('tabLogin').classList.add('active');
+                document.getElementById('tabRegister').classList.remove('active');
+                document.getElementById('authTitle').textContent = 'Вход';
+                document.getElementById('username').style.display = 'none';
+                document.querySelector('#authBox .btn').textContent = 'Войти';
+            } else {
+                document.getElementById('tabRegister').classList.add('active');
+                document.getElementById('tabLogin').classList.remove('active');
+                document.getElementById('authTitle').textContent = 'Регистрация';
+                document.getElementById('username').style.display = 'block';
+                document.querySelector('#authBox .btn').textContent = 'Создать аккаунт';
+            }
+        }
+
+        async function submitAuth() {
+            if (authMode === 'login') {
+                await login();
+            } else {
+                await register();
+            }
         }
 
         async function register() {
