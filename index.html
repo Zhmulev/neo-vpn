@@ -114,6 +114,7 @@
     <script>
         const API = 'https://neo-vpn.vercel.app/api/webhook?path=';
         let currentUser = null;
+        let userBalance = 0;
 
         function showAuth() {
             document.getElementById('authBox').classList.remove('hidden');
@@ -190,7 +191,8 @@
         async function loadBalance() {
             const res = await fetch(`${API}/payment/balance/${currentUser.id}`);
             const data = await res.json();
-            document.getElementById('balance').textContent = (data.balance || 0) + '₽';
+            userBalance = data.balance || 0;
+            document.getElementById('balance').textContent = userBalance + '₽';
         }
 
         async function topUp() {
@@ -210,7 +212,12 @@
         }
 
         async function loadConfigs() {
+            await loadBalance();
             const area = document.getElementById('contentArea');
+            if (userBalance <= 0) {
+                area.innerHTML = '<p style="color:#ff4444">Пополните баланс, чтобы получить конфиг</p>';
+                return;
+            }
             area.innerHTML = 'Загрузка...';
             const res = await fetch(`${API}/vpn/servers`);
             const servers = await res.json();
@@ -229,7 +236,12 @@
         }
 
         async function createProxy() {
+            await loadBalance();
             const area = document.getElementById('contentArea');
+            if (userBalance <= 0) {
+                area.innerHTML = '<p style="color:#ff4444">Пополните баланс, чтобы создать прокси</p>';
+                return;
+            }
             area.innerHTML = 'Создание прокси...';
             const res = await fetch(`${API}/proxy/create?user_id=${currentUser.id}&server_id=1&proxy_type=socks5`, {method: 'POST'});
             const data = await res.json();
@@ -239,7 +251,7 @@
                     <span style="color:#00ff88">${data.proxy_string}</span>
                 </div>`;
             } else {
-                area.innerHTML = `<p style="color:#ff4444">${typeof data.detail === 'string' ? data.detail : 'Ошибка'}</p>`;
+                area.innerHTML = `<p style="color:#ff4444">${typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)}</p>`;
             }
         }
 
