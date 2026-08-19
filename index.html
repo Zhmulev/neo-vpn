@@ -139,10 +139,14 @@
                     body: JSON.stringify({email, username, password})
                 });
                 const data = await res.json();
-                alert('Ответ API: ' + JSON.stringify(data));
                 if (data.id) {
                     currentUser = {id: data.id, username: data.username};
-                    showDashboard();
+                    document.getElementById('authBox').classList.add('hidden');
+                    document.getElementById('hero').classList.add('hidden');
+                    document.getElementById('pricing').classList.add('hidden');
+                    document.getElementById('dashboard').style.display = 'block';
+                    document.getElementById('userName').textContent = data.username;
+                    loadBalance();
                 } else {
                     msg.className = 'msg error';
                     msg.textContent = typeof data.detail === 'string' ? data.detail : 'Ошибка регистрации';
@@ -165,10 +169,14 @@
                     body: JSON.stringify({email, password})
                 });
                 const data = await res.json();
-                alert('Ответ API: ' + JSON.stringify(data));
                 if (data.user_id) {
                     currentUser = {id: data.user_id, username: data.username};
-                    showDashboard();
+                    document.getElementById('authBox').classList.add('hidden');
+                    document.getElementById('hero').classList.add('hidden');
+                    document.getElementById('pricing').classList.add('hidden');
+                    document.getElementById('dashboard').style.display = 'block';
+                    document.getElementById('userName').textContent = data.username;
+                    loadBalance();
                 } else {
                     msg.className = 'msg error';
                     msg.textContent = typeof data.detail === 'string' ? data.detail : 'Неверный email или пароль';
@@ -177,15 +185,6 @@
                 msg.className = 'msg error';
                 msg.textContent = 'Ошибка соединения: ' + e.message;
             }
-        }
-
-        function showDashboard() {
-            document.getElementById('authBox').classList.add('hidden');
-            document.getElementById('hero').classList.add('hidden');
-            document.getElementById('pricing').classList.add('hidden');
-            document.getElementById('dashboard').classList.remove('hidden');
-            document.getElementById('userName').textContent = currentUser.username || 'Пользователь';
-            loadBalance();
         }
 
         async function loadBalance() {
