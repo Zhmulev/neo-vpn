@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from jose import jwt
 import bcrypt
+import secrets
 from app.core.config import settings
 
 SECRET_KEY = settings.SECRET_KEY

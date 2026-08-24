@@ -7,6 +7,7 @@ from app.models.proxy import ProxyConfig
 from app.models.server import VPNServer
 from app.models.user import User
 from app.core.security import generate_proxy_credentials
+from app.services.vpn_service import VPNService
 
 router = APIRouter(prefix="/proxy", tags=["proxy"])
 
@@ -64,7 +65,13 @@ async def create_proxy(
         "proxy_address": f"{server.ip_address}:{proxy.local_port}",
         "proxy_login": login,
         "proxy_password": password,
-        "proxy_string": f"{proxy_type}://{server.ip_address}:{proxy.local_port}",
+                "proxy_string": await VPNService.create_proxy_user(
+                    server_ip=server.ip_address,
+                    proxy_type=proxy_type,
+                    login=login,
+                    password=password,
+                    port=proxy.local_port
+                ),
         "expires_at": proxy.expires_at
     }
 

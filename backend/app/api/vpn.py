@@ -4,6 +4,7 @@ from typing import List
 
 from app.db.database import get_db
 from app.models.server import VPNServer
+from app.services.vpn_service import VPNService
 
 router = APIRouter(prefix="/vpn", tags=["vpn"])
 
@@ -38,15 +39,22 @@ PersistentKeepalive = 25
             "protocol": "wireguard",
             "config": config
         }
-    elif protocol == "vless" or protocol == "vmess":
-        if not server.v2ray_config:
-            raise HTTPException(status_code=404, detail="V2Ray конфиг не настроен для этого сервера")
-        return {
-            "server_name": server.name,
-            "country": server.country,
-            "city": server.city,
-            "protocol": protocol,
-            "config": server.v2ray_config
-        }
+        elif protocol == "vless" or protocol == "vmess":
+            if server.v2ray_config:
+                config_str = server.v2ray_config
+            else:
+                # Генерируем новый конфиг через сервис (Этап 2: Провижининг)
+                config_str = await VPNService.create_vless_user(
+                    server_ip=server.endpoint,
+                    port=server.port,
+                    server_name=server.name
+                )
+            return {
+                "server_name": server.name,
+                "country": server.country,
+                "city": server.city,
+                "protocol": protocol,
+                "config": config_str
+            }
     else:
         raise HTTPException(status_code=400, detail="Неверный протокол")
