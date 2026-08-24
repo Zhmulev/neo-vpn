@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     PANEL_PASSWORD: str = "admin"
     DEFAULT_VLESS_INBOUND_ID: int = 1
 
+    # Payment
+    PAYMENT_API_KEY: str = ""
+    PAYMENT_SHOP_ID: str = ""
+    PAYMENT_WEBHOOK_SECRET: str = "super-secret-webhook-key"
+    PAYMENT_BASE_URL: str = "https://payment-gateway.example.com"
+
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 

@@ -216,26 +216,38 @@ async def home():
             } catch (e) {}
         }
 
-        async function topUpBalance() {
-            const amount = prompt('Введите сумму пополнения (₽):', '100');
-            if (!amount || isNaN(amount)) return;
-            try {
-                const response = await fetch('http://127.0.0.1:8000/payment/topup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: currentUserId, amount: parseFloat(amount) })
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    alert(`✅ Баланс пополнен на ${amount}₽`);
-                    loadBalance();
-                } else {
-                    alert('❌ ' + (data.detail || 'Ошибка'));
-                }
-            } catch (e) {
-                alert('❌ Ошибка соединения');
-            }
-        }
+async function topUpBalance() {
+const amount = prompt('Введите сумму пополнения (₽):', '100');
+if (!amount || isNaN(amount)) return;
+try {
+const response = await fetch('http://127.0.0.1:8000/payment/create', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ user_id: currentUserId, amount: parseFloat(amount) })
+});
+const data = await response.json();
+if (response.ok && data.confirmation_url) {
+if (data.confirmation_url.includes('example.com')) {
+const externalId = data.confirmation_url.split('order=')[1].split('&')[0];
+if (confirm('Эмулировать успешную оплату? (Тест)')) {
+const mockRes = await fetch(`http://127.0.0.1:8000/payment/mock_success/${externalId}`);
+if (mockRes.ok) {
+alert('✅ Баланс пополнен (Mock)');
+loadBalance();
+} else {
+alert('❌ Ошибка мокового платежа');
+}
+}
+} else {
+window.location.href = data.confirmation_url;
+}
+} else {
+alert('❌ ' + (data.detail || 'Ошибка'));
+}
+} catch (e) {
+alert('❌ Ошибка соединения');
+}
+}
 
         async function loginUser() {
             const email = document.getElementById('loginEmail').value;

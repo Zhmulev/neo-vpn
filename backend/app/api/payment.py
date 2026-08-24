@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-
 from app.db.database import get_db
 from app.models.user import User
 from app.schemas.user import BalanceTopUp, SubscribeRequest
+from app.services.payment_service import PaymentService
+from app.models.payment import PaymentTransaction
 
 router = APIRouter(prefix="/payment", tags=["payment"])
 
@@ -34,17 +35,59 @@ PERIOD_DAYS = {
     "six_months": 180,
 }
 
-@router.post("/topup")
-async def topup_balance(data: BalanceTopUp, db: Session = Depends(get_db)):
-    """Пополнение баланса"""
+@router.post("/create")
+async def create_payment(data: BalanceTopUp, db: Session = Depends(get_db)):
+    """Создание платежа и получение ссылки на оплату"""
     user = db.query(User).filter(User.id == data.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
+    if data.amount <= 0:
+        raise HTTPException(status_code=400, detail="Сумма должна быть больше 0")
 
-    user.balance += data.amount
-    db.commit()
-    db.refresh(user)
-    return {"balance": user.balance, "message": f"Баланс пополнен на {data.amount}₽"}
+    result = PaymentService.create_payment_link(data.user_id, data.amount, db)
+    return {
+        "confirmation_url": result["payment_url"],
+        "transaction_id": result["transaction_id"]
+    }
+
+@router.post("/webhook")
+async def payment_webhook(request: Request, db: Session = Depends(get_db)):
+    """Webhook от платежной системы"""
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    signature = request.headers.get("X-Payment-Signature", "")
+
+    # Проверка подписи (раскомментируйте для продакшена)
+    # if not PaymentService.verify_webhook_signature(payload, signature):
+    #     raise HTTPException(status_code=403, detail="Invalid signature")
+
+    external_id = payload.get("order_id") or payload.get("external_id")
+    amount = float(payload.get("amount", 0))
+    status = payload.get("status")
+
+    if status in ("paid", "success"):
+        success = PaymentService.process_webhook(external_id, amount, db)
+        if success:
+            return {"status": "ok"}
+        else:
+            raise HTTPException(status_code=400, detail="Processing failed")
+
+    return {"status": "ignored"}
+
+@router.get("/mock_success/{external_id}")
+async def mock_success(external_id: str, db: Session = Depends(get_db)):
+    """Имитация успешной оплаты для локального тестирования"""
+    transaction = db.query(PaymentTransaction).filter(PaymentTransaction.external_id == external_id).first()
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Транзакция не найдена")
+
+    success = PaymentService.process_webhook(external_id, transaction.amount, db)
+    if success:
+        return {"message": "Баланс успешно пополнен (Mock)"}
+    raise HTTPException(status_code=400, detail="Ошибка обработки")
 
 @router.get("/balance/{user_id}")
 async def get_balance(user_id: int, db: Session = Depends(get_db)):

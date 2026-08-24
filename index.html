@@ -230,7 +230,7 @@
         async function topUp() {
             const amount = document.getElementById('topupAmount').value;
             if (!amount || amount <= 0) return;
-            const res = await fetch(`${API}/pay/create`, {
+const res = await fetch(`${API}/payment/create`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({user_id: currentUser.id, amount: parseFloat(amount), description: 'Пополнение баланса NEO VPN'})
