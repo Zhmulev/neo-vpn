@@ -5,6 +5,7 @@ from typing import List
 from app.db.database import get_db
 from app.models.server import VPNServer
 from app.services.vpn_service import VPNService
+import uuid
 
 router = APIRouter(prefix="/vpn", tags=["vpn"])
 
@@ -44,10 +45,12 @@ PersistentKeepalive = 25
                 config_str = server.v2ray_config
             else:
                 # Генерируем новый конфиг через сервис (Этап 2: Провижининг)
+                user_email = f"user-{uuid.uuid4().hex[:8]}"
                 config_str = await VPNService.create_vless_user(
                     server_ip=server.endpoint,
                     port=server.port,
-                    server_name=server.name
+                    server_name=server.name,
+                    user_email=user_email
                 )
             return {
                 "server_name": server.name,

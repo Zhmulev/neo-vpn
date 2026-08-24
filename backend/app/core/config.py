@@ -6,6 +6,12 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str = ""
     BACKEND_URL: str = "http://127.0.0.1:8000"
 
+    # 3x-ui Panel
+    PANEL_URL: str = "http://127.0.0.1:54321"
+    PANEL_USERNAME: str = "admin"
+    PANEL_PASSWORD: str = "admin"
+    DEFAULT_VLESS_INBOUND_ID: int = 1
+
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
