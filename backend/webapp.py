@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from app.core.config import settings
 
 webapp = FastAPI(title="NEO VPN Panel")
-API_URL = "http://127.0.0.1:8000"
+API_URL = settings.BACKEND_URL
 
 @webapp.get("/", response_class=HTMLResponse)
 async def home():

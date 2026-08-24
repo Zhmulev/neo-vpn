@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
-  const { path } = req.query;
-  const baseUrl = 'http://91.132.57.27:8000';
+const { path } = req.query;
+const baseUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
   
   // Если path не указан — это webhook от ЮKassa
   const url = path ? `${baseUrl}${path}` : `${baseUrl}/pay/webhook`;

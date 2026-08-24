@@ -1,7 +1,12 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from app.core.config import settings
 
-TOKEN = "8604844501:AAHnsQQejVVZRPRQBRTea5cwV7mZ7Xq8O6s"
+TOKEN = settings.TELEGRAM_BOT_TOKEN
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [

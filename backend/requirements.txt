@@ -6,4 +6,5 @@ bcrypt>=4.0.0
 python-multipart>=0.0.9
 pydantic[email]>=2.9.0
 aiosqlite>=0.20.0
-httpx>=0.27.0
+httpx>=0.27.0pydantic-settings>=2.5.0
+python-dotenv>=1.0.1
