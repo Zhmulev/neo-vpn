@@ -9,6 +9,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     username = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+    telegram_id = Column(Integer, unique=True, index=True, nullable=True)
     is_active = Column(Boolean, default=True)
 
     # Баланс
