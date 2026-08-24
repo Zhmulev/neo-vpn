@@ -6,5 +6,12 @@ bcrypt>=4.0.0
 python-multipart>=0.0.9
 pydantic[email]>=2.9.0
 aiosqlite>=0.20.0
-httpx>=0.27.0pydantic-settings>=2.5.0
+httpx>=0.27.0
+pydantic-settings>=2.5.0
+python-telegram-bot>=20.0
+psycopg2-binary>=2.9.9
+celery[redis]>=5.3.0
+redis>=5.0.0
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
 python-dotenv>=1.0.1
